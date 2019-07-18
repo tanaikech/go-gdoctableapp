@@ -34,8 +34,10 @@ I manages the tables on Google Document using several languages. So I created th
 You can install this using `go get` as follows.
 
 ```bash
-$ go get -u github.com/tanaikech/go-gdoctableapp
+$ go get -v -u github.com/tanaikech/go-gdoctableapp
 ```
+
+This library uses [google-api-go-client](https://github.com/googleapis/google-api-go-client).
 
 # Method
 
