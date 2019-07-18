@@ -49,7 +49,7 @@ This library uses [google-api-go-client](https://github.com/googleapis/google-ap
 | [`SetValuesByObject(values []ValueObject)`](#setbaluesbyobject)              | Set values to a table with an object.           |
 | [`DeleteTable()`](#deletetable)                                              | Delete a table.                                 |
 | [`DeleteRowsAndColumns(d *DeleteRowsColumnsRequest)`](#deleterowsandcolumns) | Delete rows and columns of a table.             |
-| [`CreateTable(c *CreateTableRequest)`](createtable)                          | Create new table including sell values.         |
+| [`CreateTable(c *CreateTableRequest)`](#createtable)                          | Create new table including sell values.         |
 | [`AppendRow(c *AppendRowRequest)`](#appendrow)                               | Append row to a table by including values.      |
 
 This library uses [google-api-go-client](https://github.com/googleapis/google-api-go-client).
