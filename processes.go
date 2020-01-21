@@ -510,18 +510,42 @@ func (o *obj) parseTable() {
 			var si int64
 			var ei int64
 			for k := 0; k < len(contents); k++ {
-				elements := contents[k].Paragraph.Elements
-				for l := 0; l < len(elements); l++ {
-					if k == 0 && l == 0 {
-						si = elements[l].StartIndex
+				if contents[k].Paragraph != nil {
+					elements := contents[k].Paragraph.Elements
+					for l := 0; l < len(elements); l++ {
+						if k == 0 && l == 0 {
+							si = elements[l].StartIndex
+						}
+						if k == len(contents)-1 && l == len(elements)-1 {
+							ei = elements[l].EndIndex - 1
+						}
+						cellContent := ""
+						if elements[l].TextRun != nil {
+							cellContent = elements[l].TextRun.Content
+						} else if elements[l].InlineObjectElement != nil {
+							cellContent = "[INLINE OBJECT]"
+						} else {
+							cellContent = "[UNSUPPORTED CONTENT]"
+						}
+						tColsContent := &tempColsContent{
+							startIndex: elements[l].StartIndex,
+							endIndex:   elements[l].EndIndex,
+							content:    cellContent, // At Docs API, content is automatically converted to string.
+						}
+						tColsContents.tempColsContent = append(tColsContents.tempColsContent, *tColsContent)
 					}
-					if k == len(contents)-1 && l == len(elements)-1 {
-						ei = elements[l].EndIndex - 1
-					}
+				} else if contents[k].Table != nil {
 					tColsContent := &tempColsContent{
-						startIndex: elements[l].StartIndex,
-						endIndex:   elements[l].EndIndex,
-						content:    elements[l].TextRun.Content, // At Docs API, content is automatically converted to string.
+						startIndex: contents[k].StartIndex,
+						endIndex:   contents[k].EndIndex,
+						content:    "[TABLE]",
+					}
+					tColsContents.tempColsContent = append(tColsContents.tempColsContent, *tColsContent)
+				} else {
+					tColsContent := &tempColsContent{
+						startIndex: contents[k].StartIndex,
+						endIndex:   contents[k].EndIndex,
+						content:    "[UNSUPPORTED CONTENT]",
 					}
 					tColsContents.tempColsContent = append(tColsContents.tempColsContent, *tColsContent)
 				}
