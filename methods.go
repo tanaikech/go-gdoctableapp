@@ -13,6 +13,53 @@ import (
 /// Methods
 ///
 
+// ReplaceTextsToImagesByURL : Replace texts to images in tables by an image URL.
+//
+// from: Search text
+//
+// to: URL of image for replacing the searched texts
+//
+// tableOnly: When you want to replace the texts in only table cells, please set true. When you set false, the text is searched from all body and replaced to images.
+//
+// sample:
+//  var g *gdoctableapp.Params
+//  searchText := "sample"
+//  replaceImageURL := "https://sample/sample.png"
+//  tableOnly := true
+//  res, err := g.Docs(documentID).ReplaceTextsToImages(searchText, replaceImageURL, tableOnly).Do(client)
+//
+func (p *Params) ReplaceTextsToImagesByURL(from, to string) *Params {
+	p.Works.DoReplaceTextsToImagesByURL = true
+	p.ReplaceTextsToImagesP.ReplaceFromText = from
+	p.ReplaceTextsToImagesP.ReplaceToImage = to
+	return p
+}
+
+// ReplaceTextsToImagesByFile : Replace texts to images in tables by an image file.
+func (p *Params) ReplaceTextsToImagesByFile(from, to string) *Params {
+	p.Works.DoReplaceTextsToImagesByFile = true
+	p.ReplaceTextsToImagesP.ReplaceFromText = from
+	p.ReplaceTextsToImagesP.ReplaceToImage = to
+	return p
+}
+
+// TableOnly : Whether searches only the tables.
+func (p *Params) TableOnly(tableOnly bool) *Params {
+	if tableOnly {
+		p.ReplaceTextsToImagesP.ReplaceTableOnly = true
+	} else {
+		p.ReplaceTextsToImagesP.ReplaceTableOnly = false
+	}
+	return p
+}
+
+// SetImageSize : Set image size.
+func (p *Params) SetImageSize(width, height float64) *Params {
+	p.ReplaceTextsToImagesP.Width = width
+	p.ReplaceTextsToImagesP.Height = height
+	return p
+}
+
 // AppendRow : Append rows and values to existing table.
 func (p *Params) AppendRow(c *AppendRowRequest) *Params {
 	p.Works.DoAppendRow = true
@@ -102,6 +149,7 @@ func (o *obj) init() error {
 func (p *Params) Do(client *http.Client) (*Result, error) {
 	o := &obj{
 		params: *p,
+		fields: defaultFields,
 	}
 	o.params.Client = client
 	if err := o.init(); err != nil {

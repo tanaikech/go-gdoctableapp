@@ -20,6 +20,10 @@ Google Docs API has been released. When I used this API, I found that it is very
 - Delete table, rows and columns of the table.
 - New table can be created by including values.
 - Append rows to the table by including values.
+- Replace texts with images.
+
+      	- The image data can be retrieved from URL.
+      	- The image data can be uploaded from the local PC.
 
 ## Languages
 
@@ -42,16 +46,18 @@ This library uses [google-api-go-client](https://github.com/googleapis/google-ap
 
 # Method
 
-| Method                                                                       | Explanation                                     |
-| :--------------------------------------------------------------------------- | :---------------------------------------------- |
-| [`GetTables()`](#gettables)                                                  | Get all tables from Document.                   |
-| [`GetValues()`](#getvalues)                                                  | Get values from a table from Document.          |
-| [`SetValuesBy2DArray(values [][]interface{})`](#setvaluesby2darray)          | Set values to a table with 2 dimensional array. |
-| [`SetValuesByObject(values []ValueObject)`](#setbaluesbyobject)              | Set values to a table with an object.           |
-| [`DeleteTable()`](#deletetable)                                              | Delete a table.                                 |
-| [`DeleteRowsAndColumns(d *DeleteRowsColumnsRequest)`](#deleterowsandcolumns) | Delete rows and columns of a table.             |
-| [`CreateTable(c *CreateTableRequest)`](#createtable)                          | Create new table including sell values.         |
-| [`AppendRow(c *AppendRowRequest)`](#appendrow)                               | Append row to a table by including values.      |
+| Method                                                                       | Explanation                                       |
+| :--------------------------------------------------------------------------- | :------------------------------------------------ |
+| [`GetTables()`](#gettables)                                                  | Get all tables from Document.                     |
+| [`GetValues()`](#getvalues)                                                  | Get values from a table from Document.            |
+| [`SetValuesBy2DArray(values [][]interface{})`](#setvaluesby2darray)          | Set values to a table with 2 dimensional array.   |
+| [`SetValuesByObject(values []ValueObject)`](#setbaluesbyobject)              | Set values to a table with an object.             |
+| [`DeleteTable()`](#deletetable)                                              | Delete a table.                                   |
+| [`DeleteRowsAndColumns(d *DeleteRowsColumnsRequest)`](#deleterowsandcolumns) | Delete rows and columns of a table.               |
+| [`CreateTable(c *CreateTableRequest)`](#createtable)                         | Create new table including sell values.           |
+| [`AppendRow(c *AppendRowRequest)`](#appendrow)                               | Append row to a table by including values.        |
+| [`ReplaceTextsToImagesByURL(from, to string)`](#replacetexts)                | Replace texts with images from URL.               |
+| [`ReplaceTextsToImagesByFile(from, to string)`](#replacetexts)               | Replace texts with images from files on local PC. |
 
 This library uses [google-api-go-client](https://github.com/googleapis/google-api-go-client).
 
@@ -78,7 +84,7 @@ About the authorization, please check the section of [Authorization](#authorizat
 
 ## Scope
 
-In this library, using the scope of `https://www.googleapis.com/auth/documents` is recommended.
+In this library, using the scope of `https://www.googleapis.com/auth/documents` is recommended. When the method of `ReplaceTextsToImagesByFile` is used, also please add `https://www.googleapis.com/auth/drive`.
 
 <a name="gettables"></a>
 
@@ -355,9 +361,84 @@ When above script is run, the following result is obtained. In this case, the va
 
 ![](images/fig5.png)
 
-#### From:
+#### To:
 
 ![](images/fig6.png)
+
+<a name="replacetexts"></a>
+
+## 9. ReplaceTextsToImagesByURL and ReplaceTextsToImagesByFile
+
+### Sample script 1
+
+In this sample, the texts `{{sample}}` in all tables are replaced with the image retrieved by **the URL of `https://###/sample.png`**.
+
+```golang
+documentID := "###"
+searchText := "{{sample}}"
+tableOnly := true
+replaceImageURL := "https://###/sample.png"
+g := gdoctableapp.New()
+
+res, err := g.Docs(documentID).ReplaceTextsToImagesByURL(searchText, replaceImageURL).TableOnly(tableOnly).Do(client)
+```
+
+### Sample script 2
+
+In this sample, the texts `{{sample}}` in all tables are replaced with the image retrieved by **the file of `./sample.png` on your local PC**.
+
+```golang
+documentID := "###"
+searchText := "{{sample}}"
+tableOnly := true // default is false
+replaceImageFilePath := "./sample.png"
+g := gdoctableapp.New()
+
+res, err := g.Docs(documentID).ReplaceTextsToImagesByFile(searchText, replaceImageFilePath).TableOnly(tableOnly).Do(client)
+```
+
+- `documentID`: Document ID.
+- `client`: `*Client` for using Docs API. Please check the section of [Authorization](#authorization).
+- `searchText`: Search text. This text is replaced with image.
+- `tableOnly`: When this is `true`, only texts in the table are replaced with image. When this is `false`, the texts in the body are replaced.
+- `replaceImageURL`: URL of the image.
+- `replaceImageFilePath`: File path of the image.
+
+If you want to change the width and height of the image, please use the method of `SetImageSize(width, height float64)` like below.
+
+```golang
+res, err := g.Docs(documentID).SetImageSize(100, 100).ReplaceTextsToImagesByFile(searchText, replaceImageFilePath).TableOnly(tableOnly).Do(client)
+```
+
+### Note
+
+- The flow for replacing the text with the image on the local PC.
+
+  1. Upload the image from local PC to Google Drive.
+  2. Publicly share the image file. - The time for sharing is several seconds. The file is delete after the image is put.
+  3. Put the image using the URL of the publicly shared file.
+  4. Delete the image. - Even when the image is delete from Google Drive, the put image on Google Document is not deleted.
+
+- About `SetImageSize`
+  > [**objectSize**](https://developers.google.com/docs/api/reference/rest/v1/documents/request#insertinlineimagerequest): The size that the image should appear as in the document. This property is optional and the final size of the image in the document is determined by the following rules: _ If neither width nor height is specified, then a default size of the image is calculated based on its resolution. _ If one dimension is specified then the other dimension is calculated to preserve the aspect ratio of the image. \* If both width and height are specified, the image is scaled to fit within the provided dimensions while maintaining its aspect ratio.
+
+### Result
+
+When above script is run, the following result is obtained.
+
+#### From:
+
+![](images/fig7.png)
+
+#### To:
+
+![](images/fig8.png)
+
+The image of `https://cdn.sstatic.net/Sites/stackoverflow/company/img/logos/so/so-logo.png` was used as the sample image.
+
+When `tableOnly` is `false`, the following result is retrieved.
+
+![](images/fig9.png)
 
 <a name="authorization"></a>
 
@@ -535,6 +616,7 @@ func main() {
 ```
 
 # Sample scripts
+
 - [Creating a Table to Google Document by Retrieving Values from Google Spreadsheet for Golang](https://gist.github.com/tanaikech/0589a673cae9569181def8ccd10793cf)
 
 # Limitations
@@ -573,5 +655,9 @@ If you have any questions and commissions for me, feel free to tell me.
 - v1.0.5 (January 21, 2020)
 
   1. When the inline objects and tables are put in the table. An error occurred. This bug was removed by this update.
+
+- v1.1.0 (January 22, 2020)
+
+  1. [2 new methods were added.](#replacetexts) From this version, the texts can be replaced by images. The direct link and local file can be used as the image.
 
 [TOP](#top)

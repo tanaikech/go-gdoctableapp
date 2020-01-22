@@ -4,15 +4,18 @@ package gdoctableapp
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
 
 	docs "google.golang.org/api/docs/v1"
+	drive "google.golang.org/api/drive/v3"
 )
 
 // getTables : Retrieve all tables.
-func (o *obj) getTables() {
+func (o *obj) getTables() *obj {
 	for i, table := range o.docTables {
 		o.docTable = table
 		o.parseTable()
@@ -35,6 +38,7 @@ func (o *obj) getTables() {
 		t.TablePosition.EndIndex = table.EndIndex
 		o.result.Tables = append(o.result.Tables, *t)
 	}
+	return o
 }
 
 // getValues : Retrieve values from a table of Document.
@@ -53,6 +57,32 @@ func (o *obj) getValues() ([][]string, error) {
 		res = append(res, temp1)
 	}
 	return res, nil
+}
+
+// createInsertInlineImageRequest : Create InsertInlineImageRequest.
+func createInsertInlineImageRequest(startIndex int64, url string, width, height float64) *docs.Request {
+	r := &docs.InsertInlineImageRequest{
+		Uri: url,
+		Location: &docs.Location{
+			Index: startIndex,
+		},
+	}
+	if width > 0 && height > 0 {
+		r.ObjectSize = &docs.Size{
+			Width: &docs.Dimension{
+				Unit:      "PT",
+				Magnitude: width,
+			},
+			Height: &docs.Dimension{
+				Unit:      "PT",
+				Magnitude: height,
+			},
+		}
+	}
+	req := &docs.Request{
+		InsertInlineImage: r,
+	}
+	return req
 }
 
 // createDeleteContentRangeRequest : Create DeleteContentRangeRequest.
@@ -158,7 +188,6 @@ func (o *obj) setValuesMain() error {
 		return err
 	}
 	return nil
-
 }
 
 // setValues : Set values.
@@ -350,6 +379,135 @@ func (o *obj) appendRow() error {
 	o.params.ValuesObject = append(o.params.ValuesObject, *vo)
 	if err := o.setValuesMain(); err != nil {
 		return err
+	}
+	return nil
+}
+
+// appendBrForInsertInlineImage : Append request to slice.
+func (o *obj) appendBrForInsertInlineImage(br *docs.BatchUpdateDocumentRequest, startIndex, endIndex int64) {
+	br.Requests = append(br.Requests, createDeleteContentRangeRequest(startIndex, endIndex))
+	br.Requests = append(br.Requests, createInsertInlineImageRequest(
+		startIndex,
+		o.params.ReplaceTextsToImagesP.ReplaceToImage,
+		o.params.ReplaceTextsToImagesP.Width,
+		o.params.ReplaceTextsToImagesP.Height,
+	))
+}
+
+// getTextRunContent : Get textrun content.
+func (o *obj) getTextRunContent(ar *[]docs.ParagraphElement, h *docs.StructuralElement) {
+	if h.Paragraph != nil {
+		for _, e := range h.Paragraph.Elements {
+			if e.TextRun != nil {
+				if strings.Contains(e.TextRun.Content, o.params.ReplaceTextsToImagesP.ReplaceFromText) {
+					*ar = append(*ar, *e)
+				}
+			}
+		}
+	}
+}
+
+// getTableContent : Get table content.
+func (o *obj) getTableContent(e *docs.StructuralElement) []docs.ParagraphElement {
+	var ar []docs.ParagraphElement
+	for _, f := range e.Table.TableRows {
+		for _, g := range f.TableCells {
+			for _, h := range g.Content {
+				o.getTextRunContent(&ar, h)
+			}
+		}
+	}
+	return ar
+}
+
+// uploadImageFile : Upload image file.
+func (o *obj) uploadImageFile() error {
+	imgFile, err := os.Open(o.params.ReplaceTextsToImagesP.ReplaceToImage)
+	if err != nil {
+		return err
+	}
+	defer imgFile.Close()
+	if err := o.getSrvForDrive(); err != nil {
+		return err
+	}
+	f := &drive.File{
+		Name: filepath.Base(o.params.ReplaceTextsToImagesP.ReplaceToImage) + "_From_gdoctableapp",
+	}
+	file, err := o.srvDrive.Files.Create(f).Media(imgFile).Fields("id,webContentLink").Do()
+	if err != nil {
+		return err
+	}
+	o.result.ResponseFromAPIs = append(o.result.ResponseFromAPIs, file)
+	o.params.ReplaceTextsToImagesP.FileID = file.Id
+	o.params.ReplaceTextsToImagesP.ReplaceToImage = file.WebContentLink
+	permissiondata := &drive.Permission{
+		Type: "anyone",
+		Role: "reader",
+	}
+	resPermissions, err := o.srvDrive.Permissions.Create(file.Id, permissiondata).Do()
+	if err != nil {
+		return err
+	}
+	o.result.ResponseFromAPIs = append(o.result.ResponseFromAPIs, resPermissions)
+	return nil
+}
+
+// getSrvForDrive : Get service for using Drive API.
+func (o *obj) getSrvForDrive() error {
+	srv, err := drive.New(o.params.Client)
+	if err != nil {
+		return err
+	}
+	o.srvDrive = srv
+	return nil
+}
+
+// replaceTextsToImages : Replace texts to images by URL.
+func (o *obj) replaceTextsToImages() error {
+	if o.params.Works.DoReplaceTextsToImagesByFile {
+		if err := o.uploadImageFile(); err != nil {
+			return err
+		}
+	}
+	o.fields = "body(content)"
+	contents, err := o.getDocument()
+	if err != nil {
+		return err
+	}
+	var ar []docs.ParagraphElement
+	for _, e := range contents {
+		if e.Table != nil {
+			ar = append(ar, o.getTableContent(e)...)
+		} else if !o.params.ReplaceTextsToImagesP.ReplaceTableOnly && e.Paragraph != nil {
+			o.getTextRunContent(&ar, e)
+		}
+	}
+	br := &docs.BatchUpdateDocumentRequest{}
+	for i := int64(len(ar)) - 1; i >= 0; i-- {
+		e := ar[i]
+		content := e.TextRun.Content
+		searchText := o.params.ReplaceTextsToImagesP.ReplaceFromText
+		if strings.TrimSpace(content) == searchText {
+			offset := len(content) - len(strings.TrimSpace(content))
+			o.appendBrForInsertInlineImage(br, e.StartIndex, e.EndIndex-int64(offset))
+		} else {
+			start := e.StartIndex + int64(strings.Index(content, searchText))
+			o.appendBrForInsertInlineImage(br, start, start+int64(len(searchText)))
+		}
+	}
+	if len(br.Requests) > 0 {
+		o.requestBody = br
+		if err := o.documentbatchUpdate(); err != nil {
+			return err
+		}
+		if o.params.Works.DoReplaceTextsToImagesByFile {
+			err := o.srvDrive.Files.Delete(o.params.ReplaceTextsToImagesP.FileID).Do()
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		o.result.Message = fmt.Sprintf("'%s' was not found.", o.params.ReplaceTextsToImagesP.ReplaceFromText)
 	}
 	return nil
 }
@@ -612,7 +770,7 @@ func (o *obj) documentbatchUpdate() error {
 
 // getDocument : Retrieve Document object from Google Document.
 func (o *obj) getDocument() ([]*docs.StructuralElement, error) {
-	doc, err := o.srv.Documents.Get(o.params.DocumentID).Fields("body(content(endIndex,startIndex,table))").Do()
+	doc, err := o.srv.Documents.Get(o.params.DocumentID).Fields(o.fields).Do()
 	if err != nil {
 		return nil, err
 	}

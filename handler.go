@@ -3,6 +3,14 @@
 // This file includes handler method.
 package gdoctableapp
 
+// checkOutputValues : Check output values.
+func (o *obj) checkOutputValues() {
+	if !o.params.ShowAPIResponseFlag {
+		o.result.ResponseFromAPIs = nil
+	}
+}
+
+// handler : Handler of gdoctableapp
 func (o *obj) handler() (*Result, error) {
 	if err := o.optionChecker(); err != nil {
 		return nil, err
@@ -23,10 +31,7 @@ func (o *obj) handler() (*Result, error) {
 
 	// getTables
 	if o.params.Works.DoGetTables {
-		o.getTables()
-		if !o.params.ShowAPIResponseFlag {
-			o.result.ResponseFromAPIs = nil
-		}
+		o.getTables().checkOutputValues()
 		return &o.result, nil
 	}
 
@@ -37,9 +42,7 @@ func (o *obj) handler() (*Result, error) {
 			return nil, err
 		}
 		o.result.Values = values
-		if !o.params.ShowAPIResponseFlag {
-			o.result.ResponseFromAPIs = nil
-		}
+		o.checkOutputValues()
 		return &o.result, nil
 	}
 
@@ -48,9 +51,7 @@ func (o *obj) handler() (*Result, error) {
 		if err := o.setValues(); err != nil {
 			return nil, err
 		}
-		if !o.params.ShowAPIResponseFlag {
-			o.result.ResponseFromAPIs = nil
-		}
+		o.checkOutputValues()
 		return &o.result, nil
 	}
 
@@ -59,9 +60,7 @@ func (o *obj) handler() (*Result, error) {
 		if err := o.deleteTable(); err != nil {
 			return nil, err
 		}
-		if !o.params.ShowAPIResponseFlag {
-			o.result.ResponseFromAPIs = nil
-		}
+		o.checkOutputValues()
 		return &o.result, nil
 	}
 
@@ -70,9 +69,7 @@ func (o *obj) handler() (*Result, error) {
 		if err := o.deleteRowsColumns(); err != nil {
 			return nil, err
 		}
-		if !o.params.ShowAPIResponseFlag {
-			o.result.ResponseFromAPIs = nil
-		}
+		o.checkOutputValues()
 		return &o.result, nil
 	}
 
@@ -81,9 +78,7 @@ func (o *obj) handler() (*Result, error) {
 		if err := o.crateTable(); err != nil {
 			return nil, err
 		}
-		if !o.params.ShowAPIResponseFlag {
-			o.result.ResponseFromAPIs = nil
-		}
+		o.checkOutputValues()
 		return &o.result, nil
 	}
 
@@ -92,9 +87,16 @@ func (o *obj) handler() (*Result, error) {
 		if err := o.appendRow(); err != nil {
 			return nil, err
 		}
-		if !o.params.ShowAPIResponseFlag {
-			o.result.ResponseFromAPIs = nil
+		o.checkOutputValues()
+		return &o.result, nil
+	}
+
+	// replaceTextsToImages
+	if o.params.Works.DoReplaceTextsToImagesByURL || o.params.Works.DoReplaceTextsToImagesByFile {
+		if err := o.replaceTextsToImages(); err != nil {
+			return nil, err
 		}
+		o.checkOutputValues()
 		return &o.result, nil
 	}
 

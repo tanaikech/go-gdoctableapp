@@ -7,10 +7,13 @@ import (
 	"net/http"
 
 	docs "google.golang.org/api/docs/v1"
+	drive "google.golang.org/api/drive/v3"
+	"google.golang.org/api/googleapi"
 )
 
 const (
-	version = "1.0.5"
+	version       = "1.1.0"
+	defaultFields = "body(content(endIndex,startIndex,table))"
 )
 
 type (
@@ -27,6 +30,8 @@ type (
 		parsedValues []tempCheckDupValues
 		requestBody  *docs.BatchUpdateDocumentRequest
 		srv          *docs.Service
+		srvDrive     *drive.Service
+		fields       googleapi.Field
 	}
 
 	// Result : Result from gdoctableapp
@@ -35,9 +40,10 @@ type (
 		Values           [][]string    `json:"values,omitempty"`
 		ResponseFromAPIs []interface{} `json:"responseFromAPIs,omitempty"`
 		LibraryVersion   string        `json:"libraryVersion"`
+		Message          string        `json:"message,omitempty"`
 	}
 
-	// Params : Inputted parameters by users.
+	// Params : Parameters inputted by users.
 	Params struct {
 		AppendRowRequest         *AppendRowRequest
 		Client                   *http.Client `json:"client"`
@@ -48,15 +54,25 @@ type (
 		TableIdx                 int             `json:"tableIdx"`
 		ValuesArray              [][]interface{} `json:"valuesArray"`
 		ValuesObject             []ValueObject   `json:"valuesObject"`
-		Works                    struct {
-			DoAppendRow         bool `json:"doAppendRow"`
-			DoCreateTable       bool `json:"doCreateTable"`
-			DoDeleteTable       bool `json:"doDeleteTable"`
-			DoDeleteRowsColumns bool `json:"doDeleteRowsColumns"`
-			DoGetValues         bool `json:"doGetValues"`
-			DoGetTables         bool `json:"doGetTables"`
-			DoValuesArray       bool `json:"doValuesArray"`
-			DoValuesObject      bool `json:"doValuesObject"`
+		ReplaceTextsToImagesP    struct {
+			FileID           string  `json:"fileID"`
+			ReplaceFromText  string  `json:"replaceFromText"`
+			ReplaceToImage   string  `json:"replaceToImage"`
+			ReplaceTableOnly bool    `json:"replaceTableOnly"`
+			Width            float64 `json:"width"`
+			Height           float64 `json:"height"`
+		}
+		Works struct {
+			DoAppendRow                  bool `json:"doAppendRow"`
+			DoCreateTable                bool `json:"doCreateTable"`
+			DoDeleteTable                bool `json:"doDeleteTable"`
+			DoDeleteRowsColumns          bool `json:"doDeleteRowsColumns"`
+			DoGetValues                  bool `json:"doGetValues"`
+			DoGetTables                  bool `json:"doGetTables"`
+			DoValuesArray                bool `json:"doValuesArray"`
+			DoValuesObject               bool `json:"doValuesObject"`
+			DoReplaceTextsToImagesByURL  bool `json:"doReplaceTextsToImagesByURL"`
+			DoReplaceTextsToImagesByFile bool `json:"doReplaceTextsToImagesByFile"`
 		}
 	}
 
