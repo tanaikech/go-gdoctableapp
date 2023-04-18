@@ -71,6 +71,23 @@ Result struct {
 
 About the authorization, please check the section of [Authorization](#authorization). In order to use this library, it is required to confirm that [the Quickstart](https://developers.google.com/docs/api/quickstart/go) works fine.
 
+Please import this libray as follows.
+
+```go
+gdoctableapp "github.com/tanaikech/go-gdoctableapp"
+```
+
+And, please use as follows.
+
+```go
+client := ### // Please use your client.
+g := gdoctableapp.New()
+
+res, err := g.Docs(documentID).TableIndex(tableIndex).GetValues().Do(client)
+```
+
+- You can see the sample script including the authorization script at [here](#authorization)
+
 ## Scope
 
 In this library, using the scope of `https://www.googleapis.com/auth/documents` is recommended. When the method of `ReplaceTextsToImagesByFile` is used, also please add `https://www.googleapis.com/auth/drive`.
