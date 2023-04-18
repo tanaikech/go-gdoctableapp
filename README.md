@@ -21,28 +21,18 @@ Google Docs API has been released. When I used this API, I found that it is very
 - New table can be created by including values.
 - Append rows to the table by including values.
 - Replace texts with images.
-
-      	- The image data can be retrieved from URL.
-      	- The image data can be uploaded from the local PC.
+	- The image data can be retrieved from URL.
+	- The image data can be uploaded from the local PC.
 
 ## Languages
 
 I manages the tables on Google Document using several languages. So I created the libraries for 4 languages which are golang, node.js and python. Google Apps Script has Class DocumentApp. So I has never created the GAS library yet.
 
 - [go-gdoctableapp](https://github.com/tanaikech/go-gdoctableapp)
+	- This library uses [google-api-go-client](https://github.com/googleapis/google-api-go-client).
 - [node-gdoctableapp](https://github.com/tanaikech/node-gdoctableapp)
 - [gdoctableapppy](https://github.com/tanaikech/gdoctableapppy)
 - [google-docs-table-factory](https://github.com/gumatias/google-docs-table-factory) by gumatias
-
-# Install
-
-You can install this using `go get` as follows.
-
-```bash
-$ go get -v -u github.com/tanaikech/go-gdoctableapp
-```
-
-This library uses [google-api-go-client](https://github.com/googleapis/google-api-go-client).
 
 # Method
 
@@ -98,11 +88,12 @@ This sample script retrieves all tables from the Google Document of document ID.
 
 ```golang
 documentID := "###"
-tableIndex := 0
 g := gdoctableapp.New()
-
 res, err := g.Docs(documentID).GetTables().Do(client)
-
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
 fmt.Println(res.Tables) // You can see the retrieved values like this.
 ```
 
@@ -123,12 +114,13 @@ When the option of `ShowAPIResponse` is used, the responses from Docs API can be
 
 ```golang
 documentID := "###"
-tableIndex := 0
 g := gdoctableapp.New()
-
 res, err := g.Docs(documentID).GetTables().ShowAPIResponse(true).Do(client)
-
-fmt.Println(res.Tables) // You can see the retrieved values like this.
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+fmt.Println(res.Tables)           // You can see the retrieved values like this.
 fmt.Println(res.ResponseFromAPIs) // You can see the responses from Docs API like this.
 ```
 
@@ -146,9 +138,11 @@ This sample script retrieves the values from 1st table in Google Document. You c
 documentID := "###"
 tableIndex := 0
 g := gdoctableapp.New()
-
 res, err := g.Docs(documentID).TableIndex(tableIndex).GetValues().Do(client)
-
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
 fmt.Println(res.Values) // You can see the retrieved values like this.
 ```
 
@@ -170,10 +164,13 @@ This sample script puts the values to the first table in Google Document.
 documentID := "###"
 tableIndex := 0
 g := gdoctableapp.New()
-
-valuesBy2DArray := [][]interface{}{[]interface{}{"a1", "b1"}, []interface{}{"a2", "b2"}, []interface{}{"a3", "b3", "c3"}}
+valuesBy2DArray := [][]interface{}{{"a1", "b1"}, {"a2", "b2"}, {"a3", "b3", "c3"}}
 res, err := g.Docs(documentID).TableIndex(tableIndex).SetValuesBy2DArray(valuesBy2DArray).Do(client)
-
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+fmt.Println(res)
 ```
 
 - `documentID`: Document ID.
@@ -213,16 +210,21 @@ valuesByObject := []gdoctableapp.ValueObject{}
 vo1 := &gdoctableapp.ValueObject{}
 vo1.Range.StartRowIndex = 0
 vo1.Range.StartColumnIndex = 0
-vo1.Values = [][]interface{}{[]interface{}{"A1"}, []interface{}{"A2", "B2", "c2", "d2"}, []interface{}{"A3"}}
+vo1.Values = [][]interface{}{{"A1"}, {"A2", "B2", "c2", "d2"}, {"A3"}}
 valuesByObject = append(valuesByObject, *vo1)
 
 vo2 := &gdoctableapp.ValueObject{}
 vo2.Range.StartRowIndex = 0
 vo2.Range.StartColumnIndex = 1
-vo2.Values = [][]interface{}{[]interface{}{"B1", "C1"}}
+vo2.Values = [][]interface{}{{"B1", "C1"}}
 valuesByObject = append(valuesByObject, *vo2)
 
 res, err := g.Docs(documentID).TableIndex(tableIndex).SetValuesByObject(valuesByObject).Do(client)
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+fmt.Println(res)
 ```
 
 - `documentID`: Document ID.
@@ -260,6 +262,11 @@ tableIndex := 0
 g := gdoctableapp.New()
 
 res, err := g.Docs(documentID).TableIndex(tableIndex).DeleteTable().Do(client)
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+fmt.Println(res)
 ```
 
 - `documentID`: Document ID.
@@ -284,7 +291,11 @@ obj := &gdoctableapp.DeleteRowsColumnsRequest{
 	Columns: []int64{2, 1, 3}, // Start index is 0.
 }
 res, err := g.Docs(documentID).TableIndex(tableIndex).DeleteRowsAndColumns(obj).Do(client)
-
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+fmt.Println(res)
 ```
 
 - `documentID`: Document ID.
@@ -310,9 +321,14 @@ obj := &gdoctableapp.CreateTableRequest{
 	Columns: 5,
 	Index:   1,
 	// Append:  true, // When this is used instead of "Index", new table is created to the end of Document.
-	Values: [][]interface{}{[]interface{}{"a1", "b1"}, []interface{}{"a2", "b2"}, []interface{}{"a3", "b3", "c3"}},
+	Values: [][]interface{}{{"a1", "b1"}, {"a2", "b2"}, {"a3", "b3", "c3"}},
 }
 res, err := g.Docs(documentID).CreateTable(obj).Do(client)
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+fmt.Println(res)
 ```
 
 - `documentID`: Document ID.
@@ -343,9 +359,14 @@ tableIndex := 0
 g := gdoctableapp.New()
 
 obj := &gdoctableapp.AppendRowRequest{
-	Values: [][]interface{}{[]interface{}{"a1", "b1", "c1", 1, "", 2}, []interface{}{"a2", "b2", "c2", 1, "", 2}},
+	Values: [][]interface{}{{"a1", "b1", "c1", 1, "", 2}, {"a2", "b2", "c2", 1, "", 2}},
 }
 res, err := g.Docs(documentID).TableIndex(tableIndex).AppendRow(obj).Do(client)
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+fmt.Println(res)
 ```
 
 - `documentID`: Document ID.
@@ -381,6 +402,11 @@ replaceImageURL := "https://###/sample.png"
 g := gdoctableapp.New()
 
 res, err := g.Docs(documentID).ReplaceTextsToImagesByURL(searchText, replaceImageURL).TableOnly(tableOnly).Do(client)
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+fmt.Println(res)
 ```
 
 ### Sample script 2
@@ -395,6 +421,11 @@ replaceImageFilePath := "./sample.png"
 g := gdoctableapp.New()
 
 res, err := g.Docs(documentID).ReplaceTextsToImagesByFile(searchText, replaceImageFilePath).TableOnly(tableOnly).Do(client)
+if err != nil {
+	fmt.Println(err)
+	os.Exit(1)
+}
+fmt.Println(res)
 ```
 
 - `documentID`: Document ID.
@@ -461,7 +492,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -469,60 +499,65 @@ import (
 	gdoctableapp "github.com/tanaikech/go-gdoctableapp"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	docs "google.golang.org/api/docs/v1"
+	"google.golang.org/api/docs/v1"
 )
 
-func getClient(ctx context.Context, config *oauth2.Config) *http.Client {
-	cacheFile := "token.json"
-	tok, err := tokenFromFile(cacheFile)
+// Retrieves a token, saves the token, then returns the generated client.
+func getClient(config *oauth2.Config) *http.Client {
+	tokFile := "token.json"
+	tok, err := tokenFromFile(tokFile)
 	if err != nil {
 		tok = getTokenFromWeb(config)
-		saveToken(cacheFile, tok)
+		saveToken(tokFile, tok)
 	}
-	return config.Client(ctx, tok)
+	return config.Client(context.Background(), tok)
 }
 
+// Requests a token from the web, then returns the retrieved token.
 func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	fmt.Printf("Go to the following link in your browser then type the "+
 		"authorization code: \n%v\n", authURL)
 
-	var code string
-	if _, err := fmt.Scan(&code); err != nil {
-		log.Fatalf("Unable to read authorization code %v", err)
+	var authCode string
+	if _, err := fmt.Scan(&authCode); err != nil {
+		log.Fatalf("Unable to read authorization code: %v", err)
 	}
 
-	tok, err := config.Exchange(oauth2.NoContext, code)
+	tok, err := config.Exchange(oauth2.NoContext, authCode)
 	if err != nil {
-		log.Fatalf("Unable to retrieve token from web %v", err)
+		log.Fatalf("Unable to retrieve token from web: %v", err)
 	}
 	return tok
 }
 
+// Retrieves a token from a local file.
 func tokenFromFile(file string) (*oauth2.Token, error) {
 	f, err := os.Open(file)
+	defer f.Close()
 	if err != nil {
 		return nil, err
 	}
-	t := &oauth2.Token{}
-	err = json.NewDecoder(f).Decode(t)
-	defer f.Close()
-	return t, err
+	tok := &oauth2.Token{}
+	err = json.NewDecoder(f).Decode(tok)
+	return tok, err
 }
 
-func saveToken(file string, token *oauth2.Token) {
-	fmt.Printf("Saving credential file to: %s\n", file)
-	f, err := os.Create(file)
-	if err != nil {
-		log.Fatalf("Unable to cache oauth token: %v", err)
-	}
+// Saves a token to a file path.
+func saveToken(path string, token *oauth2.Token) {
+	fmt.Printf("Saving credential file to: %s\n", path)
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	defer f.Close()
+	if err != nil {
+		log.Fatalf("Unable to cache OAuth token: %v", err)
+	}
 	json.NewEncoder(f).Encode(token)
 }
 
 // OAuth2 : Use OAuth2
 func OAuth2() *http.Client {
-	b, err := ioutil.ReadFile("credentials.json")
+	credentialFile := "credentials.json"
+	b, err := os.ReadFile(credentialFile)
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)
 	}
@@ -530,7 +565,7 @@ func OAuth2() *http.Client {
 	if err != nil {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
-	client := getClient(context.Background(), config)
+	client := getClient(config)
 	return client
 }
 
@@ -547,7 +582,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	fmt.Println(res.GetValues)
+	fmt.Println(res.Values)
 }
 ```
 
@@ -611,7 +646,7 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	fmt.Println(res.GetValues)
+	fmt.Println(res.Values)
 }
 ```
 
@@ -659,5 +694,9 @@ If you have any questions and commissions for me, feel free to tell me.
 - v1.1.0 (January 22, 2020)
 
   1. [2 new methods were added.](#replacetexts) From this version, the texts can be replaced by images. The direct link and local file can be used as the image.
+
+- v1.1.0 (April 18, 2023)
+
+  1. Confirmed all methods and updated the sample scripts. All methods works fine.
 
 [TOP](#top)
